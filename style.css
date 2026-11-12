@@ -21,14 +21,14 @@
   --md-on-surface-variant: #6E5B52;
 
   --md-outline: #D6C9B3;
-  --md-error: #BA1A1A;
+  --md-error: #ba4d1a;
   --md-on-error: #FFFFFF;
 
   /* Legacy variable mapping for compatibility */
   --bg: var(--md-bg);
   --ink: var(--md-on-bg);
-  --green: var(--md-primary);
-  --green-d: #083863;
+  --green: #43660b;
+  --green-d: rgb(138, 199, 102);
   --red: var(--md-error);
   --blue: var(--md-secondary);
   --amber: var(--md-tertiary);
@@ -42,9 +42,17 @@
   --radius-xl: 28px;
   --radius-full: 9999px;
 
-  --shadow-1: 0 1px 3px rgba(64, 30, 18, 0.08), 0 1px 2px rgba(64, 30, 18, 0.12);
-  --shadow-2: 0 4px 12px rgba(64, 30, 18, 0.12), 0 2px 4px rgba(64, 30, 18, 0.08);
-  --shadow-3: 0 8px 24px rgba(13, 81, 140, 0.2);
+  --shadow-1: 0 1px 3px rgba(64, 30, 18, 0.4), 0 1px 2px rgba(64, 30, 18, 0.12);
+  --shadow-2: 0 4px 12px rgba(64, 30, 18, 0.5), 0 2px 4px rgba(64, 30, 18, 0.08);
+  --shadow-3: 0 8px 24px rgba(13, 81, 140, 0.7);
+
+  /* Color del encabezado: pantalla principal */
+  --header-bg: var(--md-primary);
+}
+
+/* Pantalla de productos de una lista (script.js agrega la clase "list-view" al body) */
+body.list-view {
+  --header-bg: var(--green);           /* Verde oscuro */
 }
 
 * {
@@ -57,7 +65,9 @@ html {
 
 body {
   margin: 0;
-  font-family: 'Plus Jakarta Sans', 'Roboto', system-ui, -apple-system, sans-serif;
+  font-family: "Offside", sans-serif;
+  font-weight: 400;
+  font-style: normal;
   font-size: 16px;
   line-height: 1.5;
   background-color: var(--md-bg);
@@ -70,18 +80,19 @@ header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--md-primary);
+  background-color: var(--header-bg);
+  transition: background-color 0.25s ease;
   color: var(--md-on-primary);
-  padding: 8px 16px;
+  padding: 1px 0px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 64px;
+  gap: 2px;
+  min-height: 65px;
   box-shadow: var(--shadow-2);
 }
 
 header h1 {
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0;
   flex: 1;
@@ -96,13 +107,12 @@ header h1 {
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
   font-weight: 700;
-  border-radius: var(--radius-full);
+  border-radius: 0px !important;
   padding: 0;
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  font-size: 22px;
-  
+  width: 55px;
+  height: 60px;
+  font-size: 25px;
+  box-shadow: var(--shadow-1);
   align-items: center;
   justify-content: center;
   border: none;
@@ -122,9 +132,9 @@ main {
 }
 
 h2 {
-  font-size: 22px;
+  
   font-weight: 700;
-  color: var(--md-on-bg);
+  color: var(--md-on-tertiary);
   margin: 20px 0 14px;
   text-align: center;
 }
@@ -158,19 +168,24 @@ button:active {
   width: 100%;
   max-width: 100%;
   margin: 14px 0;
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 700;
-  padding: 16px 24px;
+  padding: 10px 24px;
   border-radius: var(--radius-m);
 }
 
 .green, .primary {
-  background-color: var(--md-primary);
+  background-color:var(--green);
   color: var(--md-on-primary);
 }
 
 .blue, .secondary {
   background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+}
+
+.blue2, .secondary2 {
+  background-color: var(--md-primary);
   color: var(--md-on-secondary);
 }
 
@@ -191,8 +206,8 @@ button:active {
 }
 
 .mic {
-  font-size: 17px;
-  padding: 14px 20px;
+  font-size: 20px;
+  padding: 10px 20px;
   border-radius: var(--radius-l);
   box-shadow: var(--shadow-2);
 }
@@ -200,12 +215,25 @@ button:active {
 .link {
   display: flex;
   width: 100%;
-  background: none;
+  background: white;
   color: var(--md-primary);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 20px;
   text-decoration: none;
-  margin-top: 16px;
+  margin-top: 25px;
+  min-height: 48px;
+  box-shadow: none;
+  border-radius: var(--radius-m);
+}
+.link2 {
+  display: flex;
+  width: 100%;
+  background: white;
+  color: var(--md-on-tertiary);
+  font-weight: 600;
+  font-size: 20px;
+  text-decoration: none;
+  margin-bottom: 16px;
   min-height: 48px;
   box-shadow: none;
   border-radius: var(--radius-m);
@@ -252,7 +280,7 @@ label {
 
 .inrow button {
   flex: none;
-  background-color: var(--md-secondary);
+  background-color: var(--md-on-surface-variant);
   font-weight: 700;
   border-radius: var(--radius-xl);
   padding: 0 20px;
@@ -271,7 +299,7 @@ label {
   color: var(--md-on-surface);
   border: 1px solid var(--md-outline);
   border-radius: var(--radius-m);
-  padding: 16px 20px;
+  padding: 10px 15px;
   margin: 10px 0;
   min-height: 64px;
   box-shadow: var(--shadow-1);
@@ -292,9 +320,9 @@ label {
 .cs {
   background-color: var(--md-tertiary-container);
   color: var(--md-on-tertiary);
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 12px;
+  font-size: 15px;
+  
+  padding: 3px 12px;
   border-radius: var(--radius-full);
   white-space: nowrap;
 }
@@ -314,8 +342,8 @@ label {
   background-color: var(--md-surface);
   border: 1px solid var(--md-outline);
   border-radius: var(--radius-m);
-  padding: 16px;
-  margin: 12px 0;
+  padding: 10px 15px;
+  margin: 10px 0;
   box-shadow: var(--shadow-1);
 }
 
@@ -381,7 +409,7 @@ label {
 }
 
 .plus {
-  background-color: var(--md-primary);
+  background-color: var(--green);
   color: var(--md-on-primary);
 }
 
@@ -414,13 +442,13 @@ label {
   width: 100%;
   max-width: 640px;
   margin: 20px auto 0;
-  background-color: var(--md-secondary);
-  color: var(--md-on-secondary);
-  font-size: 17px;
+  background-color: var(--green-d);
+  color: white;
+  font-size: 20px;
   font-weight: 700;
-  min-height: 56px;
+  min-height: 50px;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-3);
+  box-shadow: var(--shadow-2);
   letter-spacing: 0.2px;
 }
 
@@ -433,8 +461,8 @@ label {
   position: fixed;
   inset: 0;
   background: rgba(64, 30, 18, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 20;
   display: flex;
   align-items: flex-end;
@@ -543,9 +571,8 @@ label {
 
 /* ---------- Footer ---------- */
 footer {
-  font-size: 13px;
   font-weight: 500;
-  color: var(--md-on-surface-variant);
+  color: var(--md-on-surface);
   text-align: center;
-  margin: 32px 0 16px;
+  margin: 20px 0 ;
 }

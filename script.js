@@ -111,8 +111,16 @@ window.addEventListener('popstate', e => { view = e.state || {name: 'home'}; fil
 history.replaceState(view, '');
 
 /* ---------- Pantallas ---------- */
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+const themeMain = themeMeta ? themeMeta.content : '';
 function render() {
   const app = $('#app'), back = $('#back'), title = $('#title');
+  // Cambia los colores (encabezado) según la pantalla: la clase la usa style.css
+  document.body.classList.toggle('list-view', view.name === 'list');
+  if (themeMeta) {
+    const hdr = getComputedStyle(document.body).getPropertyValue('--header-bg').trim();
+    themeMeta.content = (view.name === 'list' && hdr) ? hdr : themeMain;
+  }
   if (view.name === 'list') {
     const l = getList(view.id);
     if (!l) { go({name: 'home'}, false); return; }
@@ -122,19 +130,22 @@ function render() {
     title.textContent = 'Resultados'; back.hidden = false;
     app.innerHTML = searchHTML(view.q);
   } else {
-    title.textContent = 'Mi Inventario 📜'; back.hidden = true;
+    title.textContent = 'Almacen Facil 📦'; back.hidden = true;
     app.innerHTML = homeHTML();
   }
 }
 function homeHTML() {
   const ls = data.lists;
   return `
-  
-  <h2>Mis Listas :</h2>
-  ${ls.length ? ls.map(l => `<button class="card" data-a="openlist" data-l="${l.id}"><span class="cn">${esc(l.name)}</span><span class="cs">${l.items.length} ${l.items.length === 1 ? 'producto' : 'productos'}</span></button>`).join('')
+  <h2>Mis Listas 📋</h2>
+  ${ls.length ? ls.map(l => `<button class="card" data-a="openlist" data-l="${l.id}"><span class="cn">${esc(l.name)}</span><span class="cs">${l.items.length} ${l.items.length === 1 ? 'producto' : 'prod.'}</span></button>`).join('')
     : `<p class="empty">Todavía no hay listas.<br>Toque el botón azul de abajo para crear la primera.<br><small>Ejemplos: Ferretería, Bebidas, Papelería</small></p>`}
   <button class="big blue" data-a="newlist">+ Nueva lista</button>
-  <button class="link" data-a="backup">Copia de seguridad</button>`;
+
+<button class="big blue2 mic" data-a="micall">🔎 Busca Productos con Voz</button>
+  <div class="inrow"><input id="q" type="search" enterkeyhint="search" placeholder="O Escriba Aquí" autocomplete="off"><button data-a="searchall">Buscar</button></div>
+
+  <button class="link" data-a="backup">📱 Copia de Seguridad</button>`;
 }
 function rowHTML(l, it, showList) {
   return `<div class="row">
@@ -159,10 +170,11 @@ function itemsHTML(l) {
 }
 function listHTML(l) {
   return `
-  <button class="big green mic" data-a="miclist">🎤 Buscar en esta lista</button>
+   <button class="link2" data-a="listopts">✂ Opciones de la Lista</button>
+  <button class="big green mic" data-a="miclist">🔎 Buscar en la Lista con Voz</button>
   <div class="inrow"><input id="f" type="search" placeholder="o escriba para buscar" autocomplete="off" value="${esc(filter)}"></div>
   <div id="items">${itemsHTML(l)}</div>
-  <button class="link" data-a="listopts">Opciones de la lista</button>
+ 
   <button class="fab" data-a="add">+ Agregar producto</button>`;
 }
 function searchHTML(q) {
@@ -170,7 +182,7 @@ function searchHTML(q) {
   return `
   <h2 style="margin-top:0">Buscando: “${esc(q)}”</h2>
   ${res.length ? res.map(r => rowHTML(r.l, r.it, true)).join('') : `<p class="empty">No encontré nada con eso.<br>Pruebe decir solo el nombre, por ejemplo: “tornillos”.</p>`}
-  <button class="big green mic" data-a="micall">🎤 Buscar otra cosa</button>`;
+  <button class="big green mic" data-a="micall">Voz Buscar otra cosa</button>`;
 }
 
 /* ---------- Ventanas ---------- */
@@ -180,8 +192,8 @@ $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeM
 
 function textModal(title, value, placeholder, onSave) {
   modal(`<h2>${esc(title)}</h2>
-    <div class="inrow"><input id="m-text" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"><button id="m-mic" aria-label="Hablar">🔊</button></div>
-    <button class="big green" id="m-save">Guardar</button>
+    <div class="inrow"><input id="m-text" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"><button id="m-mic" aria-label="Hablar">Voz</button></div>
+    <button class="big blue" id="m-save">Guardar</button>
     <button class="big gray" id="m-cancel">Cancelar</button>`);
   $('#m-mic').onclick = () => listen(t => { $('#m-text').value = cap(t); });
   $('#m-cancel').onclick = closeModal;
@@ -201,16 +213,16 @@ function confirmModal(msg, okLabel, onOk) {
 function itemModal(l, it) {
   modal(`<h2>${it ? 'Editar producto' : 'Nuevo producto'}</h2>
     <label>Nombre</label>
-    <div class="inrow"><input id="m-name" value="${it ? esc(it.name) : ''}" placeholder="Ej: Tornillos" autocomplete="off"><button id="m-mic" aria-label="Decir el nombre">🎤</button></div>
+    <div class="inrow"><input id="m-name" value="${it ? esc(it.name) : ''}" placeholder="Ej: Tornillos" autocomplete="off"><button id="m-mic" aria-label="Decir el nombre">Voz</button></div>
     <label>Cantidad</label>
     <div class="qty">
       <button class="qb minus" id="m-minus">−</button>
       <input id="m-qty" type="number" inputmode="numeric" min="0" value="${it ? it.qty : 1}">
       <button class="qb plus" id="m-plus">+</button>
-      <button id="m-qmic" style="background:var(--blue)" aria-label="Decir la cantidad">🎤</button>
+      <button id="m-qmic" style="background:var(--md-on-tertiary)" aria-label="Decir la cantidad">Voz</button>
     </div>
     <button class="big green" id="m-save">Guardar</button>
-    ${it ? '' : '<button class="big blue" id="m-save2">Guardar y agregar otro</button>'}
+    ${it ? '' : '<button class="big green" id="m-save2">Guardar y agregar otro</button>'}
     ${it ? '<button class="big red" id="m-del">Borrar producto</button>' : ''}
     <button class="big gray" id="m-cancel">Cancelar</button>`);
   const q = $('#m-qty');
