@@ -362,3 +362,24 @@ function toast(msg) {
 
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 render();
+
+//WELCOME
+try {
+    if (sessionStorage.getItem("welcomeSeen")) {
+      document.documentElement.classList.add("skip-welcome");
+    }
+  } catch (e) {}
+// WELCOME: shown once per session (flag is set in sessionStorage)
+  (function () {
+    var screenEl = document.getElementById("welcomeScreen");
+    if (!screenEl) return;
+    if (document.documentElement.classList.contains("skip-welcome")) {
+      screenEl.style.display = "none";
+      return;
+    }
+    screenEl.addEventListener("click", function () {
+      try { sessionStorage.setItem("welcomeSeen", "1"); } catch (e) {}
+      screenEl.classList.add("fade-out");
+      setTimeout(function () { screenEl.style.display = "none"; }, 900);
+    });
+  })();
