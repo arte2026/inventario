@@ -1,11 +1,10 @@
-
 'use strict';
 /* ---------- Utilidades ---------- */
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-const collator = new Intl.Collator('es', {sensitivity: 'base'});
+const collator = new Intl.Collator(LANG, {sensitivity: 'base'});
 
 /* ---------- Datos (se guardan en el teléfono) ---------- */
 const KEY = 'inventario_v1';
@@ -19,14 +18,20 @@ function load() {
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(data)); }
-  catch (e) { toast('⚠️ No se pudo guardar. Haga una copia de seguridad.'); }
+  catch (e) { toast(tr('saveFail')); }
 }
 const getList = id => data.lists.find(l => l.id === id);
 
 /* ---------- Búsqueda ---------- */
-const STOP = new Set(['de','del','la','el','los','las','un','una','unos','unas','y','en','cuanto','cuantos','cuanta','cuantas','hay','tengo','tenemos','quedan','queda','busca','buscar','buscame','dime','que','cual','para','mi','por','favor','a','con']);
+const STOP = new Set(STOP_WORDS[LANG]);
 const plain = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]+/g, ' ').replace(/\s+/g, ' ').trim();
 function stem(w) {
+  if (LANG === 'en') {
+    if (w.length > 4 && w.endsWith('ies')) return w.slice(0, -3) + 'y';
+    if (w.length > 4 && /(s|x|z|ch|sh)es$/.test(w)) return w.slice(0, -2);
+    if (w.length > 3 && w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+    return w;
+  }
   if (w.length > 4 && w.endsWith('es')) return w.slice(0, -2);
   if (w.length > 3 && w.endsWith('s')) return w.slice(0, -1);
   return w;
@@ -53,47 +58,50 @@ function searchAll(q) {
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null;
 function listen(onText) {
-  if (!SR) { toast('Este teléfono no permite usar la voz. Escriba en la caja.'); return; }
+  if (!SR) { toast(tr('noVoice')); return; }
   try { if (rec) rec.abort(); } catch (e) {}
   rec = new SR();
-  rec.lang = 'es-MX';
+  rec.lang = VOICE_LANG;
   rec.interimResults = false;
   rec.maxAlternatives = 1;
   let got = false;
   rec.onresult = e => { got = true; onText(e.results[0][0].transcript.trim()); };
   rec.onerror = e => {
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast('Hay que permitir el micrófono para usar la voz.');
-    else if (e.error === 'network') toast('La voz necesita internet.');
-    else if (e.error !== 'aborted') toast('No le entendí. Intente otra vez.');
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast(tr('micDenied'));
+    else if (e.error === 'network') toast(tr('needsInternet'));
+    else if (e.error !== 'aborted') toast(tr('notUnderstood'));
     got = true;
   };
-  rec.onend = () => { $('#listen').hidden = true; if (!got) toast('No le escuché. Intente otra vez.'); };
+  rec.onend = () => { $('#listen').hidden = true; if (!got) toast(tr('notHeard')); };
   try { $('#listen').hidden = false; rec.start(); }
-  catch (e) { $('#listen').hidden = true; toast('No se pudo activar el micrófono.'); }
+  catch (e) { $('#listen').hidden = true; toast(tr('micFail')); }
 }
 $('#listen-cancel').onclick = () => { try { rec.abort(); } catch (e) {} $('#listen').hidden = true; };
 function speak(t) {
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(t);
-    u.lang = 'es-MX'; u.rate = 0.9;
+    u.lang = VOICE_LANG; u.rate = 0.9;
     speechSynthesis.speak(u);
   } catch (e) {}
 }
 function say(results, q) {
-  if (!results.length) { speak('No encontré ' + q); return; }
+  if (!results.length) { speak(tr('sayNotFound', {q})); return; }
   const parts = results.slice(0, 3).map(r => {
     const n = r.it.qty;
-    return r.it.name + ': ' + (n === 0 ? 'ya no queda' : 'hay ' + n) + (r.l ? ', en la lista ' + r.l.name : '');
+    return r.it.name + ': ' + (n === 0 ? tr('sayNone') : tr('sayHave', {n})) + (r.l ? tr('sayInList', {name: r.l.name}) : '');
   });
-  speak((results.length > 1 ? 'Encontré ' + results.length + '. ' : '') + parts.join('. ') + '.');
+  speak((results.length > 1 ? tr('sayFound', {n: results.length}) : '') + parts.join('. ') + '.');
 }
-const NUMS = {cero:0,un:1,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,once:11,doce:12,docena:12,trece:13,catorce:14,quince:15,veinte:20,treinta:30,cuarenta:40,cincuenta:50,sesenta:60,setenta:70,ochenta:80,noventa:90,cien:100,ciento:100};
+const NUMS = NUMS_BY_LANG[LANG];
 function parseQty(t) {
   const m = t.match(/\d+/);
   if (m) return parseInt(m[0], 10);
   let sum = 0, found = false;
-  plain(t).split(' ').forEach(w => { if (w in NUMS) { sum += NUMS[w]; found = true; } });
+  plain(t).split(' ').forEach(w => {
+    if (w === 'hundred') { sum = (sum || 1) * 100; found = true; }
+    else if (Object.prototype.hasOwnProperty.call(NUMS, w)) { sum += NUMS[w]; found = true; }
+  });
   return found ? sum : null;
 }
 
@@ -127,62 +135,62 @@ function render() {
     title.textContent = l.name; back.hidden = false;
     app.innerHTML = listHTML(l);
   } else if (view.name === 'search') {
-    title.textContent = 'Resultados'; back.hidden = false;
+    title.textContent = tr('results'); back.hidden = false;
     app.innerHTML = searchHTML(view.q);
   } else {
-    title.textContent = 'Almacen Facil 📦'; back.hidden = true;
+    title.textContent = tr('appTitle'); back.hidden = true;
     app.innerHTML = homeHTML();
   }
 }
 function homeHTML() {
   const ls = data.lists;
   return `
-  <h2>Mis Listas 📋</h2>
-  ${ls.length ? ls.map(l => `<button class="card" data-a="openlist" data-l="${l.id}"><span class="cn">${esc(l.name)}</span><span class="cs">${l.items.length} ${l.items.length === 1 ? 'producto' : 'prod.'}</span></button>`).join('')
-    : `<p class="empty">Todavía no hay listas.<br>Toque el botón azul de abajo para crear la primera.<br><small>Ejemplos: Ferretería, Bebidas, Papelería</small></p>`}
-  <button class="big blue" data-a="newlist">+ Nueva lista</button>
+  <h2>${tr('myLists')}</h2>
+  ${ls.length ? ls.map(l => `<button class="card" data-a="openlist" data-l="${l.id}"><span class="cn">${esc(l.name)}</span><span class="cs">${l.items.length} ${l.items.length === 1 ? tr('product') : tr('productShort')}</span></button>`).join('')
+    : `<p class="empty">${tr('noLists')}</p>`}
+  <button class="big blue" data-a="newlist">${tr('newList')}</button>
 
-<button class="big blue2 mic" data-a="micall">🔎 Busca Productos con Voz</button>
-  <div class="inrow"><input id="q" type="search" enterkeyhint="search" placeholder="O Escriba Aquí" autocomplete="off"><button data-a="searchall">Buscar</button></div>
+<button class="big blue2 mic" data-a="micall">${tr('micAll')}</button>
+  <div class="inrow"><input id="q" type="search" enterkeyhint="search" placeholder="${tr('typeHere')}" autocomplete="off"><button data-a="searchall">${tr('searchBtn')}</button></div>
 
-  <button class="link" data-a="backup">📱 Copia de Seguridad</button>`;
+  <button class="link" data-a="backup">${tr('backup')}</button>`;
 }
 function rowHTML(l, it, showList) {
   return `<div class="row">
     <div class="rowtop">
-      <div class="iname">${esc(it.name)}${showList ? `<small>Lista: ${esc(l.name)}</small>` : ''}</div>
-      <button class="ico" data-a="edit" data-l="${l.id}" data-i="${it.id}" aria-label="Editar">✏️</button>
+      <div class="iname">${esc(it.name)}${showList ? `<small>${tr('listLabel')}${esc(l.name)}</small>` : ''}</div>
+      <button class="ico" data-a="edit" data-l="${l.id}" data-i="${it.id}" aria-label="${tr('edit')}">✏️</button>
     </div>
     <div class="qty">
-      <button class="qb minus" data-a="dec" data-l="${l.id}" data-i="${it.id}" aria-label="Quitar uno">−</button>
+      <button class="qb minus" data-a="dec" data-l="${l.id}" data-i="${it.id}" aria-label="${tr('removeOne')}">−</button>
       <span class="n ${it.qty <= 0 ? 'zero' : ''}">${it.qty}</span>
-      <button class="qb plus" data-a="inc" data-l="${l.id}" data-i="${it.id}" aria-label="Agregar uno">+</button>
+      <button class="qb plus" data-a="inc" data-l="${l.id}" data-i="${it.id}" aria-label="${tr('addOne')}">+</button>
     </div>
   </div>`;
 }
 function itemsHTML(l) {
   const items = (filter ? matchItems(l.items, filter) : l.items.slice()).sort((a, b) => collator.compare(a.name, b.name));
   if (!items.length) {
-    return filter ? `<p class="empty">No hay nada que se llame así en esta lista.</p>`
-      : `<p class="empty">Esta lista está vacía.<br>Toque el botón verde de abajo para agregar el primer producto.</p>`;
+    return filter ? `<p class="empty">${tr('emptyFilter')}</p>`
+      : `<p class="empty">${tr('emptyList')}</p>`;
   }
   return items.map(it => rowHTML(l, it, false)).join('');
 }
 function listHTML(l) {
   return `
-   <button class="link2" data-a="listopts">✂ Opciones de la Lista</button>
-  <button class="big green mic" data-a="miclist">🔎 Buscar en la Lista con Voz</button>
-  <div class="inrow"><input id="f" type="search" placeholder="o escriba para buscar" autocomplete="off" value="${esc(filter)}"></div>
+   <button class="link2" data-a="listopts">${tr('listOpts')}</button>
+  <button class="big green mic" data-a="miclist">${tr('micList')}</button>
+  <div class="inrow"><input id="f" type="search" placeholder="${tr('typeToSearch')}" autocomplete="off" value="${esc(filter)}"></div>
   <div id="items">${itemsHTML(l)}</div>
  
-  <button class="fab" data-a="add">+ Agregar producto</button>`;
+  <button class="fab" data-a="add">${tr('addProduct')}</button>`;
 }
 function searchHTML(q) {
   const res = searchAll(q);
   return `
-  <h2 style="margin-top:0">Buscando: “${esc(q)}”</h2>
-  ${res.length ? res.map(r => rowHTML(r.l, r.it, true)).join('') : `<p class="empty">No encontré nada con eso.<br>Pruebe decir solo el nombre, por ejemplo: “tornillos”.</p>`}
-  <button class="big green mic" data-a="micall">Voz Buscar otra cosa</button>`;
+  <h2 style="margin-top:0">${tr('searching')}: “${esc(q)}”</h2>
+  ${res.length ? res.map(r => rowHTML(r.l, r.it, true)).join('') : `<p class="empty">${tr('noResults')}</p>`}
+  <button class="big green mic" data-a="micall">${tr('searchAnother')}</button>`;
 }
 
 /* ---------- Ventanas ---------- */
@@ -192,39 +200,39 @@ $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeM
 
 function textModal(title, value, placeholder, onSave) {
   modal(`<h2>${esc(title)}</h2>
-    <div class="inrow"><input id="m-text" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"><button id="m-mic" aria-label="Hablar">Voz</button></div>
-    <button class="big blue" id="m-save">Guardar</button>
-    <button class="big gray" id="m-cancel">Cancelar</button>`);
+    <div class="inrow"><input id="m-text" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"><button id="m-mic" aria-label="${tr('speak')}">${tr('voice')}</button></div>
+    <button class="big blue" id="m-save">${tr('save')}</button>
+    <button class="big gray" id="m-cancel">${tr('cancel')}</button>`);
   $('#m-mic').onclick = () => listen(t => { $('#m-text').value = cap(t); });
   $('#m-cancel').onclick = closeModal;
   $('#m-save').onclick = () => {
     const v = cap($('#m-text').value.trim());
-    if (!v) { toast('Escriba o diga el nombre'); return; }
+    if (!v) { toast(tr('nameToast')); return; }
     onSave(v);
   };
 }
 function confirmModal(msg, okLabel, onOk) {
   modal(`<h2>${esc(msg)}</h2>
     <button class="big red" id="m-ok">${esc(okLabel)}</button>
-    <button class="big gray" id="m-cancel">No, cancelar</button>`);
+    <button class="big gray" id="m-cancel">${tr('noCancel')}</button>`);
   $('#m-cancel').onclick = closeModal;
   $('#m-ok').onclick = () => { closeModal(); onOk(); };
 }
 function itemModal(l, it) {
-  modal(`<h2>${it ? 'Editar producto' : 'Nuevo producto'}</h2>
-    <label>Nombre</label>
-    <div class="inrow"><input id="m-name" value="${it ? esc(it.name) : ''}" placeholder="Ej: Tornillos" autocomplete="off"><button id="m-mic" aria-label="Decir el nombre">Voz</button></div>
-    <label>Cantidad</label>
+  modal(`<h2>${it ? tr('editProduct') : tr('newProduct')}</h2>
+    <label>${tr('nameLabel')}</label>
+    <div class="inrow"><input id="m-name" value="${it ? esc(it.name) : ''}" placeholder="${tr('exampleName')}" autocomplete="off"><button id="m-mic" aria-label="${tr('sayName')}">${tr('voice')}</button></div>
+    <label>${tr('qtyLabel')}</label>
     <div class="qty">
       <button class="qb minus" id="m-minus">−</button>
       <input id="m-qty" type="number" inputmode="numeric" min="0" value="${it ? it.qty : 1}">
       <button class="qb plus" id="m-plus">+</button>
-      <button id="m-qmic" style="background:var(--md-on-tertiary)" aria-label="Decir la cantidad">Voz</button>
+      <button id="m-qmic" style="background:var(--md-on-tertiary)" aria-label="${tr('sayQty')}">${tr('voice')}</button>
     </div>
-    <button class="big green" id="m-save">Guardar</button>
-    ${it ? '' : '<button class="big green" id="m-save2">Guardar y agregar otro</button>'}
-    ${it ? '<button class="big red" id="m-del">Borrar producto</button>' : ''}
-    <button class="big gray" id="m-cancel">Cancelar</button>`);
+    <button class="big green" id="m-save">${tr('save')}</button>
+    ${it ? '' : `<button class="big green" id="m-save2">${tr('saveAndAdd')}</button>`}
+    ${it ? `<button class="big red" id="m-del">${tr('deleteProduct')}</button>` : ''}
+    <button class="big gray" id="m-cancel">${tr('cancel')}</button>`);
   const q = $('#m-qty');
   const getQ = () => { const n = parseInt(q.value, 10); return isNaN(n) || n < 0 ? 0 : n; };
   $('#m-minus').onclick = () => { q.value = Math.max(0, getQ() - 1); };
@@ -232,12 +240,12 @@ function itemModal(l, it) {
   $('#m-mic').onclick = () => listen(t => { $('#m-name').value = cap(t); });
   $('#m-qmic').onclick = () => listen(t => {
     const n = parseQty(t);
-    if (n === null) toast('No entendí el número. Use los botones + y −.'); else q.value = n;
+    if (n === null) toast(tr('qtyNotUnderstood')); else q.value = n;
   });
   $('#m-cancel').onclick = closeModal;
   const commit = again => {
     const name = cap($('#m-name').value.trim());
-    if (!name) { toast('Escriba o diga el nombre del producto'); return; }
+    if (!name) { toast(tr('productNameToast')); return; }
     if (it) { it.name = name; it.qty = getQ(); }
     else l.items.push({id: uid(), name, qty: getQ()});
     save(); closeModal(); render();
@@ -245,20 +253,20 @@ function itemModal(l, it) {
   };
   $('#m-save').onclick = () => commit(false);
   if (!it) $('#m-save2').onclick = () => commit(true);
-  if (it) $('#m-del').onclick = () => confirmModal('¿Borrar “' + it.name + '”?', 'Sí, borrar', () => {
+  if (it) $('#m-del').onclick = () => confirmModal(tr('confirmDeleteItem', {name: it.name}), tr('yesDelete'), () => {
     l.items = l.items.filter(x => x.id !== it.id); save(); render();
   });
 }
 function listOptions(l) {
   modal(`<h2>${esc(l.name)}</h2>
-    <button class="big blue" id="o-share">Enviar lista por mensaje</button>
-    <button class="big blue" id="o-rename">Cambiar nombre de la lista</button>
-    <button class="big red" id="o-del">Borrar esta lista</button>
-    <button class="big gray" id="o-close">Cerrar</button>`);
+    <button class="big blue" id="o-share">${tr('share')}</button>
+    <button class="big blue" id="o-rename">${tr('rename')}</button>
+    <button class="big red" id="o-del">${tr('deleteList')}</button>
+    <button class="big gray" id="o-close">${tr('close')}</button>`);
   $('#o-close').onclick = closeModal;
   $('#o-share').onclick = () => { closeModal(); shareList(l); };
-  $('#o-rename').onclick = () => textModal('Nuevo nombre de la lista', l.name, 'Nombre', v => { l.name = v; save(); closeModal(); render(); });
-  $('#o-del').onclick = () => confirmModal('¿Borrar la lista “' + l.name + '” y todo lo que tiene?', 'Sí, borrar todo', () => {
+  $('#o-rename').onclick = () => textModal(tr('newListName'), l.name, tr('nameLabel'), v => { l.name = v; save(); closeModal(); render(); });
+  $('#o-del').onclick = () => confirmModal(tr('confirmDeleteList', {name: l.name}), tr('yesDeleteAll'), () => {
     data.lists = data.lists.filter(x => x.id !== l.id); save(); go({name: 'home'});
   });
 }
@@ -268,16 +276,16 @@ async function shareList(l) {
     try { await navigator.share({title: l.name, text}); return; }
     catch (e) { if (e.name === 'AbortError') return; }
   }
-  try { await navigator.clipboard.writeText(text); toast('Lista copiada. Péguela en un mensaje.'); }
-  catch (e) { toast('No se pudo enviar la lista.'); }
+  try { await navigator.clipboard.writeText(text); toast(tr('copied')); }
+  catch (e) { toast(tr('shareFail')); }
 }
 function backupModal() {
-  modal(`<h2>Copia de seguridad</h2>
-    <p>Guarde una copia por si se pierde el teléfono o se borra la información.</p>
-    <button class="big blue" id="b-save">Guardar copia</button>
-    <button class="big blue" id="b-load">Recuperar una copia</button>
+  modal(`<h2>${tr('backupTitle')}</h2>
+    <p>${tr('backupText')}</p>
+    <button class="big blue" id="b-save">${tr('saveCopy')}</button>
+    <button class="big blue" id="b-load">${tr('loadCopy')}</button>
     <input id="b-file" type="file" accept=".json,application/json" hidden>
-    <button class="big gray" id="b-close">Cerrar</button>`);
+    <button class="big gray" id="b-close">${tr('close')}</button>`);
   $('#b-close').onclick = closeModal;
   $('#b-save').onclick = () => {
     const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
@@ -286,7 +294,7 @@ function backupModal() {
     a.download = 'inventario-' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    toast('Copia guardada en Descargas.');
+    toast(tr('copySaved'));
   };
   $('#b-load').onclick = () => $('#b-file').click();
   $('#b-file').onchange = e => {
@@ -296,8 +304,8 @@ function backupModal() {
       try {
         const d = JSON.parse(r.result);
         if (!d || !Array.isArray(d.lists)) throw 0;
-        confirmModal('Esto reemplaza lo que hay ahora. ¿Continuar?', 'Sí, recuperar', () => { data = d; save(); go({name: 'home'}); toast('Copia recuperada.'); });
-      } catch (err) { toast('Ese archivo no es una copia válida.'); }
+        confirmModal(tr('replaceConfirm'), tr('yesRestore'), () => { data = d; save(); go({name: 'home'}); toast(tr('restored')); });
+      } catch (err) { toast(tr('invalidBackup')); }
     };
     r.readAsText(f);
   };
@@ -306,7 +314,7 @@ function backupModal() {
 /* ---------- Acciones ---------- */
 function doSearch(q, byVoice) {
   q = (q || '').trim();
-  if (!q) { toast('Diga o escriba lo que busca'); return; }
+  if (!q) { toast(tr('saySearch')); return; }
   go({name: 'search', q});
   if (byVoice) say(searchAll(q), q);
 }
@@ -324,17 +332,22 @@ document.addEventListener('click', e => {
     case 'back': go({name: 'home'}); break;
     case 'openlist': go({name: 'list', id: d.l}); break;
     case 'newlist':
-      textModal('Crea una Nueva Lista', '', 'Escribe el Nombre', v => {
+      textModal(tr('createList'), '', tr('typeName'), v => {
         const l = {id: uid(), name: v, items: []};
         data.lists.push(l); save(); go({name: 'list', id: l.id});
       });
       break;
     case 'micall': listen(t => doSearch(t, true)); break;
     case 'searchall': doSearch($('#q').value, false); break;
+    case 'sfilter':
+      stockFilter = d.sf || 'all';
+      render();
+      break;
     case 'miclist': listen(t => {
       filter = t;
-      const l = getList(view.id); render();
-      say(matchItems(l.items, t).map(it => ({it})), t);
+      const l = getList(view.id);
+      render();
+      say(matchItems(l.items, t).map(it => ({l, it})), t);
     }); break;
     case 'add': itemModal(getList(view.id), null); break;
     case 'edit': { const l = getList(d.l); itemModal(l, l.items.find(i => i.id === d.i)); break; }
@@ -383,3 +396,23 @@ try {
       setTimeout(function () { screenEl.style.display = "none"; }, 900);
     });
   })();
+
+  let stockFilter = 'all'; // 'all' | 'low' | 'out'
+const LOW_THRESHOLD = 3;
+
+const isOut = it => Number(it.qty) <= 0;
+const isLow = it => {
+  const q = Number(it.qty);
+  const limit = typeof it.minQty === 'number' ? it.minQty : LOW_THRESHOLD;
+  return q > 0 && q <= limit;
+};
+
+function go(v, push = true) {
+  view = v;
+  filter = '';
+  stockFilter = 'all';
+  if (push) history.pushState(v, '');
+  closeModal();
+  render();
+  window.scrollTo(0, 0);
+}

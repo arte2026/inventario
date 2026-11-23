@@ -1,0 +1,163 @@
+/* Softer Material elevation */
+:root {
+  --shadow-1: 0 1px 2px rgba(64, 30, 18, 0.12), 0 1px 3px rgba(64, 30, 18, 0.08);
+  --shadow-2: 0 3px 8px rgba(64, 30, 18, 0.16), 0 1px 3px rgba(64, 30, 18, 0.10);
+  --shadow-3: 0 8px 20px rgba(13, 81, 140, 0.22);
+}
+
+/* Instant skip when welcomeSeen is set in sessionStorage */
+html.skip-welcome #welcomeScreen {
+  display: none !important;
+}
+
+/* Top App Bar balance & rounded back control */
+.hbtn {
+  border-radius: var(--radius-m) !important;
+  margin-left: 6px;
+  width: 48px;
+  height: 48px;
+  min-height: 48px;
+}
+
+.header-spacer {
+  width: 54px;
+  flex: none;
+}
+
+/* Reserve space at bottom of list view so Extended FAB never covers items */
+body.list-view main {
+  padding-bottom: 96px;
+}
+
+/* Material 3 Filter Chips */
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scrollbar-width: none;
+}
+
+.chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: var(--radius-s);
+  background-color: var(--md-surface);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.chip.active {
+  background-color: var(--md-primary-container);
+  color: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+.chip.warn.active {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary);
+  border-color: var(--md-tertiary);
+}
+
+/* Low-stock & zero-stock visual cues */
+.row.low-stock {
+  border-left: 4px solid var(--md-tertiary);
+}
+
+.row.out-stock {
+  border-left: 4px solid var(--md-error);
+}
+
+.stock-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.stock-badge.low {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary);
+}
+
+.stock-badge.out {
+  background-color: rgba(186, 77, 26, 0.14);
+  color: var(--md-error);
+}
+
+.n.low {
+  color: #b56500;
+}
+
+.n.bump {
+  transform: scale(1.16);
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Extended Floating Action Button */
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: 20px;
+  width: auto;
+  max-width: calc(100% - 32px);
+  border-radius: var(--radius-l);
+  color: white;
+  font-size: 17px;
+  z-index: 15;
+}
+
+/* Concentric Ripple Rings on Listening Overlay */
+.mic-stage {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mic-ring {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  animation: micRipple 2.1s infinite ease-out;
+  pointer-events: none;
+}
+
+.mic-ring:nth-child(2) {
+  animation-delay: 1.05s;
+}
+
+#listen .bigmic {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes micRipple {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.sheet {
+  overscroll-behavior: contain;
+}
