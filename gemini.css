@@ -13,8 +13,8 @@ html.skip-welcome #welcomeScreen {
 /* Top App Bar balance & rounded back control */
 .hbtn {
   border-radius: var(--radius-m) !important;
-  margin-left: 6px;
-  width: 48px;
+  margin-left: 16px;
+  width: 75px;
   height: 48px;
   min-height: 48px;
 }
@@ -26,16 +26,17 @@ html.skip-welcome #welcomeScreen {
 
 /* Reserve space at bottom of list view so Extended FAB never covers items */
 body.list-view main {
-  padding-bottom: 96px;
+  padding-bottom: 60px;
 }
 
 /* Material 3 Filter Chips */
 .chip-row {
   display: flex;
-  gap: 8px;
+  gap: 18px;
   overflow-x: auto;
-  padding: 4px 2px 12px;
+  padding: 4px 12px 12px;
   scrollbar-width: none;
+  margin-top:37px;
 }
 
 .chip-row::-webkit-scrollbar {
@@ -108,13 +109,13 @@ body.list-view main {
 /* Extended Floating Action Button */
 .fab {
   position: fixed;
-  right: 16px;
-  bottom: 20px;
+  right: 30px;
+  bottom: 60px;
   width: auto;
   max-width: calc(100% - 32px);
   border-radius: var(--radius-l);
   color: white;
-  font-size: 17px;
+  font-size: 20px;
   z-index: 15;
 }
 

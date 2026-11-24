@@ -98,7 +98,7 @@ header {
 }
 
 header h1 {
-  font-size: 25px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0;
   flex: 1;
@@ -135,10 +135,11 @@ main {
   padding: 20px 16px 32px;
   max-width: 640px;
   margin: 0 auto;
+  background-color: rgb(255, 255, 255, 0.3);
 }
 
 h2 {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--md-on-tertiary);
   margin: 20px 0 14px;
@@ -240,7 +241,7 @@ button:active {
   font-weight: 600;
   font-size: 20px;
   text-decoration: none;
-  margin-bottom: 16px;
+  margin-bottom: 30px;
   min-height: 48px;
   box-shadow: none;
   border-radius: var(--radius-m);
@@ -610,4 +611,42 @@ footer {
 .welcome-screen.fade-out {
   opacity: 0;
   transition: opacity 0.9s ease;
+}
+
+/* Chrome, Edge, Safari and Opera */
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background-color: #fffbeb;
+  border-radius: 6px;
+  border: 1px solid #fde68a;
+}
+*::-webkit-scrollbar-track:hover { background-color: #fef3c7; }
+*::-webkit-scrollbar-track:active { background-color: #fde68a; }
+
+*::-webkit-scrollbar-thumb {
+  background-color: #f59e0b;
+  /* a transparent border with background-clip makes a gap around the thumb */
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+  min-height: 30px;
+  min-width: 30px;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: #d97706; }
+*::-webkit-scrollbar-thumb:active { background-color: #92400e; }
+
+*::-webkit-scrollbar-corner { background-color: #fffbeb; }
+*::-webkit-scrollbar-button { display: none; }
+
+/* Firefox: only a thumb and track colour and a width keyword. Kept inside @supports,
+   because Chrome and Edge 121+ ignore all the rules above once scrollbar-color is set. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: #f59e0b #fffbeb;
+  }
 }
